@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 import numpy
 import pickle
@@ -8,9 +10,9 @@ dtr=pickle.load(open("dwords.p",'rb'))
 print "Loading Word2Vec"
 #model=np.load("modelgensim.npy").item()
 
-model = word2vec.Word2Vec.load_word2vec_format("GoogleNews-vectors-negative300.bin.gz",binary=True)
-
-
+model = gensim.models.KeyedVectors.load_word2vec_format("GoogleNews-vectors-negative300.bin.gz",binary=True)
+# model = word2vec.Word2Vec.load("GoogleNews-vectors-negative300_trimmed_bin_index.pkl", mmap='r')
+# model.similarity(word2vec.model.mos)
 
 def prepare_data(data):
     xa1=[]
