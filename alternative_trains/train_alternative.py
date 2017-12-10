@@ -1,4 +1,19 @@
-from SiameseLSTM import *
+import time
+from random import *
+from theano import config
+from theano.tensor.shared_randomstreams import RandomStreams
+import theano
+from theano import tensor
+import theano.tensor as T
+import scipy.stats as meas
+import numpy as np
+
+from alternative_trains.SiameseLSTM import *
+from util_files.general_utils import init_tparams, numpy_floatX
+from util_files.data_utils import expand, prepare_data
+from util_files.nn_utils import getpl2, embed, adadelta
+from util_files.Constants import data_folder
+
 
 def chkterr2(mydata):
     count=[]
@@ -35,6 +50,7 @@ def chkterr2(mydata):
     yx=np.array(yx)
     #print "average error= "+str(np.mean(acc))
     return np.mean(np.square(px-yx)),meas.pearsonr(px,yx)[0],meas.spearmanr(yx,px)[0]
+
 
 def train_lstm(train,max_epochs):
     print "Training"
@@ -89,6 +105,10 @@ def train_lstm(train,max_epochs):
         print "epoch took:",sto-sta
 
 
+training = True  # Set to false to load weights
+Syn_aug = True  # it False faster but does slightly worse on Test dataset
+
+
 print training
 newp=creatrnnx()
 for i in newp.keys():
@@ -99,8 +119,8 @@ mask11 = tensor.matrix('mask11', dtype=config.floatX)
 mask21 = tensor.matrix('mask21', dtype=config.floatX)
 emb11=theano.tensor.ftensor3('emb11')
 emb21=theano.tensor.ftensor3('emb21')
-if training==False:
-    newp=pickle.load(open("bestsem.p",'rb'))
+if not training:
+    newp=pickle.load(open(data_folder + "bestsem.p",'rb'))
 tnewp=init_tparams(newp)
 trng = RandomStreams(1234)
 use_noise = theano.shared(numpy_floatX(0.))
@@ -119,7 +139,7 @@ cost=T.mean((sim - ys) ** 2)
 ns=emb11.shape[1]
 f2sim=theano.function([emb11,mask11,emb21,mask21],sim,allow_input_downcast=True)
 f_cost=theano.function([emb11,mask11,emb21,mask21,y],cost,allow_input_downcast=True)
-if training==True:
+if training:
     
     gradi = tensor.grad(cost, wrt=tnewp.values())#/bts
     grads=[]
@@ -134,19 +154,19 @@ if training==True:
     f_grad_shared, f_update = adadelta(lr, tnewp, grads,emb11,mask11,emb21,mask21,y, cost)
 
 
-train=pickle.load(open("stsallrmf.p","rb"))#[:-8]
-if training==True:
+train=pickle.load(open(data_folder + "stsallrmf.p","rb"))#[:-8]
+if training:
     print "Pre-training"
     train_lstm(train,66)
     print "Pre-training done"
-    train=pickle.load(open("semtrain.p",'rb'))
-    if Syn_aug==True:
-        train=expand(train)
+    train=pickle.load(open(data_folder + "semtrain.p",'rb'))
+    if Syn_aug:
+        train=expand(train, ignore_flag=False)
         train_lstm(train,375)
     else:
         train_lstm(train,330)
 
-test=pickle.load(open("semtest.p",'rb'))
+test=pickle.load(open(data_folder + "semtest.p",'rb'))
 print chkterr2(test)
 
 #Example

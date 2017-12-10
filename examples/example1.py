@@ -1,7 +1,8 @@
-from lstm import *
-sls=lstm("bestsem.p",load=True,training=False)
+from lstm import lstm
+from util_files.Constants import data_folder
+sls=lstm(data_folder + "bestsem.p",load=True,training=False)
 
-test=pickle.load(open("semtest.p",'rb'))
+# test=pickle.load(open("semtest.p",'rb'))
 #Example
 sa="A truly wise man"
 sb="He is smart"

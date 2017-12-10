@@ -2,16 +2,21 @@
 # coding: utf-8
 
 # In[7]:
+from random import shuffle
 
-from lstm import *
-
+from lstm import lstm
+import pickle
+import numpy as np
+import numpy
 from sklearn.svm import SVC
 
 
 # In[2]:
+from util_files.Constants import data_folder, use_noise
+from util_files.nn_utils import embed
 
 lst=lstm(False)
-train=pickle.load(open("kaggle.p",'rb'))
+train=pickle.load(open(data_folder + "kaggle.p",'rb'))
 
 
 # In[8]:
