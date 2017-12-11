@@ -1,5 +1,4 @@
 # coding: utf-8
-
 from random import *
 import theano.tensor as T
 from theano import config
@@ -14,7 +13,7 @@ from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from util_files.Constants import use_noise
 from util_files.nn_utils import getpl2, adadelta, embed_sentence
-from util_files.general_utils import getlayerx, init_tparams, numpy_floatX
+from util_files.general_utils import getlayerx, init_tparams
 from util_files.data_utils import prepare_data
 
 
@@ -55,7 +54,6 @@ class lstm():
         emb11 = theano.tensor.ftensor3('emb11')
         emb21 = theano.tensor.ftensor3('emb21')
         trng = RandomStreams(1234)
-        use_noise = theano.shared(numpy_floatX(0.))
 
         rate = 0.5
         rrng = trng.binomial(emb11.shape, p=1 - rate, n=1, dtype=emb11.dtype)
@@ -71,7 +69,7 @@ class lstm():
         ns = emb11.shape[1]
         self.f2sim = theano.function([emb11, mask11, emb21, mask21], sim, allow_input_downcast=True)
         self.f_proj11 = theano.function([emb11, mask11], proj11, allow_input_downcast=True)
-        self.f_cost = theano.function([emb11, mask11, emb21, mask21, y], cost, allow_input_downcast=True)
+        self.f_cost = theano.function([emb11, mask11, emb21, mask21, y], cost, allow_input_downcast=True)  # not used
 
         if training:
             gradi = tensor.grad(cost, wrt=tnewp.values())  # /bts
@@ -79,57 +77,54 @@ class lstm():
             l = len(gradi)
             for i in range(0, l / 2):
                 gravg = (gradi[i] + gradi[i + l / 2]) / (4.0)
-                # print i,i+9
                 grads.append(gravg)
             for i in range(0, len(tnewp.keys()) / 2):
                 grads.append(grads[i])
 
             self.f_grad_shared, self.f_update = adadelta(lr, tnewp, grads, emb11, mask11, emb21, mask21, y, cost)
 
-    def train_lstm(self, train, max_epochs):
-        print "Training"
-        freq = 0
-        batchsize = 32
-        dfreq = 40  # display frequency
-        lrate = 0.0001
+    @staticmethod
+    def _prepare_embeddings(x1, x2):
+        ls = []
+        ls2 = []
+        for j in range(0, len(x1)):
+            ls.append(embed_sentence(x1[j]))
+            ls2.append(embed_sentence(x2[j]))
+        trconv = np.dstack(ls)
+        trconv2 = np.dstack(ls2)
+        emb2 = np.swapaxes(trconv2, 1, 2)
+        emb1 = np.swapaxes(trconv, 1, 2)
+        return emb1, emb2
+
+    def train_lstm(self, train, max_epochs, batch_size=32, disp_freq=40, lrate=0.0001):
+        print "train_lstm - Start Training"
+        batch_count = 0
         for eidx in xrange(0, max_epochs):
-            num = len(train)
             sta = time.time()
             print 'Epoch', eidx
-            rnd = sample(xrange(len(train)), len(train))
-            for i in range(0, num, batchsize):
-                q = []
-                x = i + batchsize
-                if x > num:
-                    x = num
-                for z in range(i, x):
-                    q.append(train[rnd[z]])
-                # q=train[i:i+32]
-                # shuffle(q)
-                x1, mas1, x2, mas2, y2 = prepare_data(q)
+            rnd_order = sample(xrange(len(train)), len(train))  # random order for training each batch
+            for batch_start_idx in range(0, len(train), batch_size):
+                batch_count += 1
 
-                ls = []
-                ls2 = []
-                freq += 1
+                batch_train = []
+                batch_end = batch_start_idx + batch_size if batch_end <= len(train) else len(train)
+                for z in range(batch_start_idx, batch_end):
+                    batch_train.append(train[rnd_order[z]])  # extract from the training file
+                # batch_train=train[batch_start_idx:batch_start_idx+32]
+                # shuffle(batch_train)
+                x1, mas1, x2, mas2, y2 = prepare_data(batch_train)
                 use_noise.set_value(1.)
-                for j in range(0, len(x1)):
-                    ls.append(embed_sentence(x1[j]))
-                    ls2.append(embed_sentence(x2[j]))
-                trconv = np.dstack(ls)
-                trconv2 = np.dstack(ls2)
-                emb2 = np.swapaxes(trconv2, 1, 2)
-                emb1 = np.swapaxes(trconv, 1, 2)
+                emb1, emb2 = self._prepare_embeddings(x1, x2)
 
-                cst = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)
+                cost = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)
                 s = self.f_update(lrate)
 
-                if np.mod(freq, dfreq) == 0:
-                    print 'Epoch ', eidx, 'Update ', freq, 'Cost ', cst
+                if np.mod(batch_count, disp_freq) == 0:
+                    print 'Epoch ', eidx, 'Update ', batch_count, 'Cost ', cost
             sto = time.time()
             print "epoch took:", sto - sta
 
     def chkterr2(self, mydata):
-        count = []
         num = len(mydata)
         px = []
         yx = []
@@ -142,15 +137,7 @@ class lstm():
             for j in range(i, x):
                 q.append(mydata[j])
             x1, mas1, x2, mas2, y2 = prepare_data(q)
-            ls = []
-            ls2 = []
-            for j in range(0, len(q)):
-                ls.append(embed_sentence(x1[j]))
-                ls2.append(embed_sentence(x2[j]))
-            trconv = np.dstack(ls)
-            trconv2 = np.dstack(ls2)
-            emb2 = np.swapaxes(trconv2, 1, 2)
-            emb1 = np.swapaxes(trconv, 1, 2)
+            emb1, emb2 = self._prepare_embeddings(x1, x2)
             pred = (self.f2sim(emb1, mas1, emb2, mas2)) * 4.0 + 1.0
             # dm1=np.ones(mas1.shape,dtype=np.float32)
             # dm2=np.ones(mas2.shape,dtype=np.float32)
@@ -167,16 +154,8 @@ class lstm():
     def predict_similarity(self, sa, sb):
         q = [[sa, sb, 0]]
         x1, mas1, x2, mas2, y2 = prepare_data(q)
-        ls = []
-        ls2 = []
+        assert len(x1) == len(q), "ASdasd"
         use_noise.set_value(0.)
-        for j in range(0, len(x1)):
-            ls.append(embed_sentence(x1[j]))
-            ls2.append(embed_sentence(x2[j]))
-        trconv = np.dstack(ls)
-        trconv2 = np.dstack(ls2)
-        emb2 = np.swapaxes(trconv2, 1, 2)
-        emb1 = np.swapaxes(trconv, 1, 2)
-        return self.f2sim(emb1, mas1, emb2, mas2)
+        emb1, emb2 = self._prepare_embeddings(x1, x2)
 
-# In[ ]:
+        return self.f2sim(emb1, mas1, emb2, mas2)
