@@ -7,25 +7,25 @@ from util_files.general_utils import _p, numpy_floatX
 from util_files.Constants import options, use_noise, dtr, model
 
 
-def dropout_layer(state_before, use_noise, rrng,rate):
+def dropout_layer(state_before, use_noise, rrng, rate):
     proj = tensor.switch(use_noise,
-                         (state_before *rrng),
-                         state_before * (1-rate))
+                         (state_before * rrng),
+                         state_before * (1 - rate))
     return proj
 
 
-def getpl2(prevlayer,pre,mymask,used,rrng,size,tnewp):
+def getpl2(prevlayer, pre, mymask, used, rrng, size, tnewp):
     proj = lstm_layer2(tnewp, prevlayer, options,
-                                        prefix=pre,
-                                        mask=mymask,nhd=size)
+                       prefix=pre,
+                       mask=mymask, nhd=size)
     if used:
         print "Added dropout"
-        proj = dropout_layer(proj, use_noise, rrng,0.5)
+        proj = dropout_layer(proj, use_noise, rrng, 0.5)
 
     return proj
 
 
-def lstm_layer2(tparams, state_below, options, prefix='lstm', mask=None,nhd=None):
+def lstm_layer2(tparams, state_below, options, prefix='lstm', mask=None, nhd=None):
     nsteps = state_below.shape[0]
     if state_below.ndim == 3:
         n_samples = state_below.shape[1]
@@ -59,22 +59,22 @@ def lstm_layer2(tparams, state_below, options, prefix='lstm', mask=None,nhd=None
 
     state_below = (tensor.dot(state_below, tparams[_p(prefix, 'W')].T) +
                    tparams[_p(prefix, 'b')].T)
-    #print "hvals"
+    # print "hvals"
     dim_proj = nhd
-    [hvals,yvals], updates = theano.scan(_step,
-                                sequences=[mask, state_below],
-                                outputs_info=[tensor.alloc(numpy_floatX(0.),
-                                                           n_samples,
-                                                           dim_proj),
-                                              tensor.alloc(numpy_floatX(0.),
-                                                           n_samples,
-                                                           dim_proj)],
-                                name=_p(prefix, '_layers'),
-                                n_steps=nsteps)
+    [hvals, yvals], updates = theano.scan(_step,
+                                          sequences=[mask, state_below],
+                                          outputs_info=[tensor.alloc(numpy_floatX(0.),
+                                                                     n_samples,
+                                                                     dim_proj),
+                                                        tensor.alloc(numpy_floatX(0.),
+                                                                     n_samples,
+                                                                     dim_proj)],
+                                          name=_p(prefix, '_layers'),
+                                          n_steps=nsteps)
     return hvals
 
 
-def adadelta(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
+def adadelta(lr, tparams, grads, emb11, mask11, emb21, mask21, y, cost):
     zipped_grads = [theano.shared(p.get_value() * numpy_floatX(0.),
                                   name='%s_grad' % k)
                     for k, p in tparams.iteritems()]
@@ -86,10 +86,10 @@ def adadelta(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
                       for k, p in tparams.iteritems()]
 
     zgup = [(zg, g) for zg, g in zip(zipped_grads, grads)]
-    rg2up = [(rg2, (0.95 * rg2 + 0.05* (g ** 2)))
+    rg2up = [(rg2, (0.95 * rg2 + 0.05 * (g ** 2)))
              for rg2, g in zip(running_grads2, grads)]
 
-    f_grad_shared = theano.function([emb11,mask11,emb21,mask21,y], cost, updates=zgup + rg2up,
+    f_grad_shared = theano.function([emb11, mask11, emb21, mask21, y], cost, updates=zgup + rg2up,
                                     name='adadelta_f_grad_shared')
 
     updir = [-tensor.sqrt(ru2 + 1e-6) / tensor.sqrt(rg2 + 1e-6) * zg
@@ -97,7 +97,7 @@ def adadelta(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
                                      running_up2,
                                      running_grads2)]
     ru2up = [(ru2, (0.95 * ru2 + 0.05 * (ud ** 2)))
-             for ru2, ud in zip(running_up2,updir)]
+             for ru2, ud in zip(running_up2, updir)]
     param_up = [(p, p + ud) for p, ud in zip(tparams.values(), updir)]
 
     f_update = theano.function([lr], [], updates=ru2up + param_up,
@@ -107,12 +107,11 @@ def adadelta(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
     return f_grad_shared, f_update
 
 
-def sgd(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
-
+def sgd(lr, tparams, grads, emb11, mask11, emb21, mask21, y, cost):
     gshared = [theano.shared(p.get_value() * 0., name='%s_grad' % k)
                for k, p in tparams.iteritems()]
     gsup = [(gs, g) for gs, g in zip(gshared, grads)]
-    f_grad_shared = theano.function([emb11,mask11,emb21,mask21,y], cost, updates=gsup,
+    f_grad_shared = theano.function([emb11, mask11, emb21, mask21, y], cost, updates=gsup,
                                     name='sgd_f_grad_shared')
     pup = [(p, p - lr * g) for p, g in zip(tparams.values(), gshared)]
     f_update = theano.function([lr], [], updates=pup,
@@ -121,7 +120,7 @@ def sgd(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
     return f_grad_shared, f_update
 
 
-def rmsprop(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
+def rmsprop(lr, tparams, grads, emb11, mask11, emb21, mask21, y, cost):
     zipped_grads = [theano.shared(p.get_value() * numpy_floatX(0.),
                                   name='%s_grad' % k)
                     for k, p in tparams.iteritems()]
@@ -137,7 +136,7 @@ def rmsprop(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
     rg2up = [(rg2, 0.95 * rg2 + 0.05 * (g ** 2))
              for rg2, g in zip(running_grads2, grads)]
 
-    f_grad_shared = theano.function([emb11,mask11,emb21,mask21,y], cost,
+    f_grad_shared = theano.function([emb11, mask11, emb21, mask21, y], cost,
                                     updates=zgup + rgup + rg2up,
                                     name='rmsprop_f_grad_shared')
 
@@ -156,18 +155,18 @@ def rmsprop(lr, tparams, grads, emb11,mask11,emb21,mask21,y, cost):
     return f_grad_shared, f_update
 
 
-def embed(stmx):
-    #stmx=stmx.split()
-    dmtr=numpy.zeros((stmx.shape[0],300),dtype=np.float32)
-    count=0
-    while(count<len(stmx)):
-        if stmx[count]==',':
-            count+=1
+def embed_sentence(sent_arr):
+    """ embed sent_arr (which is a numpy array with the words array(['A', 'truly', 'wise', 'man'], dtype='|S5') """
+    dmtr = numpy.zeros((sent_arr.shape[0], 300), dtype=np.float32)
+    word_idx = 0
+    while word_idx < len(sent_arr):
+        if sent_arr[word_idx] == ',':
+            word_idx += 1
             continue
-        if stmx[count] in dtr:
-            dmtr[count]=model[dtr[stmx[count]]]
-            count+=1
+        if sent_arr[word_idx] in dtr:
+            dmtr[word_idx] = model[dtr[sent_arr[word_idx]]]
+            word_idx += 1
         else:
-            dmtr[count]=model[stmx[count]]
-            count+=1
+            dmtr[word_idx] = model[sent_arr[word_idx]]
+            word_idx += 1
     return dmtr

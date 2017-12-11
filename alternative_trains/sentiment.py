@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 
 # In[2]:
 from util_files.Constants import data_folder, use_noise
-from util_files.nn_utils import embed
+from util_files.nn_utils import embed_sentence
 
 lst=lstm(False)
 train=pickle.load(open(data_folder + "kaggle.p",'rb'))
@@ -71,7 +71,7 @@ def fpro(mydata):
         ls=[]
         ls2=[]
         for j in range(0,len(q)):
-            ls.append(embed(x1[j]))
+            ls.append(embed_sentence(x1[j]))
             #ls2.append(embed(x2[j]))
         trconv=np.dstack(ls)
         emb1=np.swapaxes(trconv,1,2)

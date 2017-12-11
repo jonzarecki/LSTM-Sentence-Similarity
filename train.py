@@ -6,6 +6,7 @@ from util_files.data_utils import expand
 
 training = True  # Set to false to load weights
 Syn_aug = True  # it False faster but does slightly worse on Test dataset
+save_model = False
 
 sls = lstm(data_folder + "new_model.p", load=False, training=True)
 
@@ -23,6 +24,11 @@ if training:
 
 test = pickle.load(open(data_folder + "semtest.p", 'rb'))
 print sls.chkterr2(test)
+
+if save_model:
+    sys.setrecursionlimit(5000)  # avoid limit-exceeded when pickling
+    pkl.dump(sls, open("data/newp.p", "wb"))
+
 # Example
 sa = "A truly wise man"
 sb = "He is smart"

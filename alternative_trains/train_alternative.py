@@ -11,7 +11,7 @@ import numpy as np
 from alternative_trains.SiameseLSTM import *
 from util_files.general_utils import init_tparams, numpy_floatX
 from util_files.data_utils import expand, prepare_data
-from util_files.nn_utils import getpl2, embed, adadelta
+from util_files.nn_utils import getpl2, embed_sentence, adadelta
 from util_files.Constants import data_folder
 
 
@@ -32,8 +32,8 @@ def chkterr2(mydata):
         ls=[]
         ls2=[]
         for j in range(0,len(q)):
-            ls.append(embed(x1[j]))
-            ls2.append(embed(x2[j]))
+            ls.append(embed_sentence(x1[j]))
+            ls2.append(embed_sentence(x2[j]))
         trconv=np.dstack(ls)
         trconv2=np.dstack(ls2)
         emb2=np.swapaxes(trconv2,1,2)
@@ -85,8 +85,8 @@ def train_lstm(train,max_epochs):
             freq+=1
             use_noise.set_value(1.)
             for j in range(0,len(x1)):
-                ls.append(embed(x1[j]))
-                ls2.append(embed(x2[j]))
+                ls.append(embed_sentence(x1[j]))
+                ls2.append(embed_sentence(x2[j]))
             trconv=np.dstack(ls)
             trconv2=np.dstack(ls2)
             emb2=np.swapaxes(trconv2,1,2)
@@ -176,8 +176,8 @@ x1,mas1,x2,mas2,y2=prepare_data(q)
 ls=[]
 ls2=[]
 for j in range(0,len(q)):
-    ls.append(embed(x1[j]))
-    ls2.append(embed(x2[j]))
+    ls.append(embed_sentence(x1[j]))
+    ls2.append(embed_sentence(x2[j]))
 trconv=np.dstack(ls)
 trconv2=np.dstack(ls2)
 emb2=np.swapaxes(trconv2,1,2)
