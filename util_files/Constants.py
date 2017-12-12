@@ -21,6 +21,7 @@ options=locals().copy()
 
 data_folder = "data/"
 embeddings_folder = os.path.join(data_folder, "word_embeddings/")
+models_folder = os.path.join(data_folder, "models/")
 
 def initialize_w2v():
     global model

@@ -1,6 +1,7 @@
 from lstm import lstm
-from util_files.Constants import data_folder
-sls=lstm(data_folder + "bestsem.p",load=True,training=False)
+from util_files.Constants import data_folder, models_folder
+
+sls=lstm(models_folder + "bestsem.p",load=True,training=False)
 
 # test=pickle.load(open("semtest.p",'rb'))
 #Example

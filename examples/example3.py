@@ -1,7 +1,7 @@
 import sys
 
 from lstm import *
-from util_files.Constants import data_folder
+from util_files.Constants import data_folder, models_folder
 from util_files.data_utils import expand
 
 
@@ -9,7 +9,7 @@ training = True  # Set to false to load weights
 Syn_aug = False  # it False faster but does slightly worse on Test dataset
 save_model = False
 
-sls = lstm(data_folder + "new.p", load=False, training=True)
+sls = lstm(models_folder + "new.p", load=False, training=True)
 
 train = pickle.load(open(data_folder + "stsallrmf.p", "rb"))  # [:-8]
 if training:
@@ -25,7 +25,7 @@ if training:
 
 if save_model:
     sys.setrecursionlimit(5000)  # avoid limit-exceeded when pickling
-    pickle.dump(sls, open("data/newp.p", "wb"))
+    pickle.dump(sls, open(models_folder + "datanewp.p", "wb"))
 
 test = pickle.load(open(data_folder + "semtest.p", 'rb'))
 print sls.chkterr2(test)

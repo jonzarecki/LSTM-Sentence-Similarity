@@ -12,7 +12,7 @@ from alternative_trains.SiameseLSTM import *
 from util_files.general_utils import init_tparams, numpy_floatX
 from util_files.data_utils import expand, prepare_data
 from util_files.nn_utils import getpl2, embed_sentence, adadelta
-from util_files.Constants import data_folder
+from util_files.Constants import data_folder, models_folder
 
 
 def chkterr2(mydata):
@@ -120,7 +120,7 @@ mask21 = tensor.matrix('mask21', dtype=config.floatX)
 emb11=theano.tensor.ftensor3('emb11')
 emb21=theano.tensor.ftensor3('emb21')
 if not training:
-    newp=pickle.load(open(data_folder + "bestsem.p",'rb'))
+    newp=pickle.load(open(models_folder + "bestsem.p",'rb'))
 tnewp=init_tparams(newp)
 trng = RandomStreams(1234)
 use_noise = theano.shared(numpy_floatX(0.))
