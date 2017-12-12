@@ -2,7 +2,7 @@ import theano
 from theano import tensor as tensor
 
 from util_files.general_utils import _p, numpy_floatX
-from util_files.Constants import options, use_noise
+from util_files.Constants import use_noise
 
 
 def dropout_layer(state_before, use_noise, rrng, rate):
@@ -13,9 +13,7 @@ def dropout_layer(state_before, use_noise, rrng, rate):
 
 
 def getpl2(prevlayer, pre, mymask, used, rrng, size, tnewp):
-    proj = lstm_layer2(tnewp, prevlayer, options,
-                       prefix=pre,
-                       mask=mymask, nhd=size)
+    proj = lstm_layer2(tnewp, prevlayer, prefix=pre, mask=mymask, nhd=size)
     if used:
         print "Added dropout"
         proj = dropout_layer(proj, use_noise, rrng, 0.5)
@@ -23,7 +21,7 @@ def getpl2(prevlayer, pre, mymask, used, rrng, size, tnewp):
     return proj
 
 
-def lstm_layer2(tparams, state_below, options, prefix='lstm', mask=None, nhd=None):
+def lstm_layer2(tparams, state_below, prefix='lstm', mask=None, nhd=None):
     nsteps = state_below.shape[0]
     if state_below.ndim == 3:
         n_samples = state_below.shape[1]

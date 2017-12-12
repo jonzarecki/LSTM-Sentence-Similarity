@@ -2,7 +2,7 @@ import random
 import numpy
 import numpy as np
 
-from util_files.Constants import dtr, d2, cachedStopWords, model
+from util_files.Constants import dtr, d2, cachedStopWords, model, word_prob, total_counts
 
 
 def pfl(s):
@@ -47,7 +47,7 @@ def chsyn(sent, trn_data, ignore_flag):
                 continue
             if model.similarity(q, mst) < 0.6:
                 continue
-            print sent_words[i],mst
+            # print sent_words[i],mst
             sent_words[i] = mst
             if q.find('ing') != -1:
                 if sent_words[i] + 'ing' in model:
@@ -133,6 +133,8 @@ def getmtr(xa, maxlen):
 #     data = pickle.load(open(data_folder + filename, "rb"))
 #     df = pd.DataFrame(data, columns=['sent1', 'sent2', 'sim_score'])
 #     df.to_csv(data_folder + filename + ".csv")
+
+
 def embed_sentence(sent_arr):
     """ embed sent_arr (which is a numpy array with the words array(['A', 'truly', 'wise', 'man'], dtype='|S5') """
     dmtr = numpy.zeros((sent_arr.shape[0], 300), dtype=np.float32)
@@ -148,3 +150,14 @@ def embed_sentence(sent_arr):
             dmtr[word_idx] = model[sent_arr[word_idx]]
             word_idx += 1
     return dmtr
+
+
+def sentence_unigram_probability(sent):
+    """ pretty weak language model but should be enough"""
+    prob = 1
+    for word in sent.split():
+        if word in word_prob:
+            prob *= word_prob[word]
+        else:
+            prob *= 1.0 / total_counts
+    return prob
