@@ -2,7 +2,7 @@ import sys
 
 from lstm import *
 from util_files.Constants import data_folder, models_folder
-from util_files.data_utils import expand
+from util_files.data_utils import expand_positive_examples
 
 
 training = True  # Set to false to load weights
@@ -18,7 +18,7 @@ if training:
     print "Pre-training done"
     train = pickle.load(open(data_folder + "semtrain.p", 'rb'))
     if Syn_aug:
-        train = expand(train, ignore_flag=True)
+        train = expand_positive_examples(train, ignore_flag=True)
         sls.train_lstm(train, 375)
     else:
         sls.train_lstm(train, 330)
@@ -28,7 +28,7 @@ if save_model:
     pickle.dump(sls, open(models_folder + "datanewp.p", "wb"))
 
 test = pickle.load(open(data_folder + "semtest.p", 'rb'))
-print sls.chkterr2(test)
+print sls.check_error(test)
 # Example
 sa = "A truly wise man"
 sb = "He is smart"

@@ -13,7 +13,7 @@ from sklearn.svm import SVC
 
 # In[2]:
 from util_files.Constants import data_folder, use_noise
-from util_files.nn_utils import embed_sentence
+from util_files.data_utils import embed_sentence
 
 lst=lstm(False)
 train=pickle.load(open(data_folder + "kaggle.p",'rb'))

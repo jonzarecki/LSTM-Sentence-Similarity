@@ -10,8 +10,8 @@ import numpy as np
 
 from alternative_trains.SiameseLSTM import *
 from util_files.general_utils import init_tparams, numpy_floatX
-from util_files.data_utils import expand, prepare_data
-from util_files.nn_utils import getpl2, embed_sentence, adadelta
+from util_files.data_utils import expand_positive_examples, prepare_data, embed_sentence
+from util_files.nn_utils import getpl2, adadelta
 from util_files.Constants import data_folder, models_folder
 
 
@@ -161,7 +161,7 @@ if training:
     print "Pre-training done"
     train=pickle.load(open(data_folder + "semtrain.p",'rb'))
     if Syn_aug:
-        train=expand(train, ignore_flag=False)
+        train=expand_positive_examples(train, ignore_flag=False)
         train_lstm(train,375)
     else:
         train_lstm(train,330)

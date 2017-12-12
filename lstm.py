@@ -1,5 +1,6 @@
 # coding: utf-8
 from random import *
+import sys
 import theano.tensor as T
 from theano import config
 import theano
@@ -12,9 +13,9 @@ import pickle
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from util_files.Constants import use_noise
-from util_files.nn_utils import getpl2, adadelta, embed_sentence
+from util_files.nn_utils import getpl2, adadelta
 from util_files.general_utils import getlayerx, init_tparams
-from util_files.data_utils import prepare_data
+from util_files.data_utils import prepare_data, embed_sentence
 
 
 def creatrnnx():
@@ -38,10 +39,10 @@ def creatrnnx():
     return newp
 
 
-class lstm():
-    def __init__(self, nam, load=False, training=False):
+class lstm:
+    def __init__(self, model_path, load=False, training=False):
         if load:
-            newp = pickle.load(open(nam, 'rb'))  # nam is only used here
+            newp = pickle.load(open(model_path, 'rb'))  # nam is only used here
         else:
             newp = creatrnnx()
         tnewp = init_tparams(newp)
@@ -106,26 +107,24 @@ class lstm():
             for batch_start_idx in range(0, len(train), batch_size):
                 batch_count += 1
 
-                batch_train = []
-                batch_end = batch_start_idx + batch_size if batch_end <= len(train) else len(train)
-                for z in range(batch_start_idx, batch_end):
-                    batch_train.append(train[rnd_order[z]])  # extract from the training file
-                # batch_train=train[batch_start_idx:batch_start_idx+32]
-                # shuffle(batch_train)
+                batch_end = batch_start_idx + batch_size if (batch_start_idx + batch_size) <= len(train) else len(train)
+                batch_train = [train[rnd_order[idx]] for idx in range(batch_start_idx, batch_end)]  # extract examples
+
                 x1, mas1, x2, mas2, y2 = prepare_data(batch_train)
                 use_noise.set_value(1.)
                 emb1, emb2 = self._prepare_embeddings(x1, x2)
 
-                cost = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)
+                cost = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)  # mean-squared error as defined at __init__
                 s = self.f_update(lrate)
+                assert s == [], "the retruns value does do something"
 
                 if np.mod(batch_count, disp_freq) == 0:
                     print 'Epoch ', eidx, 'Update ', batch_count, 'Cost ', cost
             sto = time.time()
             print "epoch took:", sto - sta
 
-    def chkterr2(self, mydata):
-        num = len(mydata)
+    def check_error(self, test_data):
+        num = len(test_data)
         px = []
         yx = []
         use_noise.set_value(0.)
@@ -135,7 +134,7 @@ class lstm():
             if x > num:
                 x = num
             for j in range(i, x):
-                q.append(mydata[j])
+                q.append(test_data[j])
             x1, mas1, x2, mas2, y2 = prepare_data(q)
             emb1, emb2 = self._prepare_embeddings(x1, x2)
             pred = (self.f2sim(emb1, mas1, emb2, mas2)) * 4.0 + 1.0
@@ -159,3 +158,13 @@ class lstm():
         emb1, emb2 = self._prepare_embeddings(x1, x2)
 
         return self.f2sim(emb1, mas1, emb2, mas2)
+
+    def to_pickle(self):
+        old_lim = sys.getrecursionlimit()
+        sys.setrecursionlimit(5000)  # avoid limit-exceeded when pickling
+        pickle.dump(self, open(self.model_path, "wb"))
+        sys.setrecursionlimit(old_lim)
+
+    @staticmethod
+    def load_from_pickle(model_path):
+        return pickle.load(open(model_path, "rb"))

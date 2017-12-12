@@ -11,21 +11,21 @@ def pfl(s):
     return s
 
 
-def chsyn(s, trn, ignore_flag):
+def chsyn(sent, trn_data, ignore_flag):
     from util_files.Constants import flg
     cnt = 0
-    x2 = s.split()
-    x = []
+    sent_wrods = sent.split()
+    sent_words = sent.split()
 
-    for i in x2:
-        x.append(i)
-    for i in range(0, len(x)):
-        q = x[i]
+    for i in sent_wrods:
+        sent_words.append(i)
+    for i in range(0, len(sent_words)):
+        q = sent_words[i]
         mst = ''
         if q not in d2:
             continue
         if flg == 1 and not ignore_flag:
-            trn = pfl(trn)
+            trn_data = pfl(trn_data)
             flg = 0
 
         if q in cachedStopWords or q.title() in cachedStopWords or q.lower() in cachedStopWords:
@@ -38,7 +38,6 @@ def chsyn(s, trn, ignore_flag):
             elif q.lower() in d2:
                 mst = findsim(q)
             if q not in model:
-                mst = ''
                 continue
 
         if mst in model:
@@ -48,21 +47,20 @@ def chsyn(s, trn, ignore_flag):
                 continue
             if model.similarity(q, mst) < 0.6:
                 continue
-            # print x[i],mst
-            x[i] = mst
+            print sent_words[i],mst
+            sent_words[i] = mst
             if q.find('ing') != -1:
-                if x[i] + 'ing' in model:
-                    x[i] += 'ing'
-                if x[i][:-1] + 'ing' in model:
-                    x[i] = x[i][:-1] + 'ing'
+                if sent_words[i] + 'ing' in model:
+                    sent_words[i] += 'ing'
+                if sent_words[i][:-1] + 'ing' in model:
+                    sent_words[i] = sent_words[i][:-1] + 'ing'
             if q.find('ed') != -1:
-                if x[i] + 'ed' in model:
-                    x[i] += 'ed'
-                if x[i][:-1] + 'ed' in model:
-                    x[i] = x[i][:-1] + 'ed'
+                if sent_words[i] + 'ed' in model:
+                    sent_words[i] += 'ed'
+                if sent_words[i][:-1] + 'ed' in model:
+                    sent_words[i] = sent_words[i][:-1] + 'ed'
             cnt += 1
-            mst = ''
-    return ' '.join(x), cnt
+    return ' '.join(sent_words), cnt
 
 
 def findsim(wd):
@@ -71,29 +69,27 @@ def findsim(wd):
     return syns[x]
 
 
-def check(sa, sb, dat):
-    for i in dat:
+def check_not_in_dataset(sa, sb, data):
+    for i in data:
         if sa == i[0] and sb == i[1]:
             return False
         if sa == i[1] and sb == i[0]:
             return False
-    return True
+    return True  # don't apear already
 
 
-def expand(data, ignore_flag):
-    n = []
+def expand_positive_examples(data, ignore_flag):
+    new_examples = []
     for m in range(0, 10):
-        for i in data:
-            sa, cnt1 = chsyn(i[0], data, ignore_flag)
-            sb, cnt2 = chsyn(i[1], data, ignore_flag)
+        for ex in data:
+            sa, cnt1 = chsyn(ex[0], data, ignore_flag)
+            sb, cnt2 = chsyn(ex[1], data, ignore_flag)
             if cnt1 > 0 and cnt2 > 0:
-                l1 = [sa, sb, i[2]]
-                n.append(l1)
-    print len(n)
-    for i in n:
-        if check(i[0], i[1], data):
-            data.append(i)
-    return data
+                new_ex = [sa, sb, ex[2]]
+                new_examples.append(new_ex)
+    new_examples = filter(lambda new_ex: check_not_in_dataset(new_ex[0], new_ex[1], data), new_examples)
+    print "expand_positive_samples added " + str(len(new_examples)) + " new examples"
+    return data + new_examples
 
 
 def prepare_data(data):
@@ -132,3 +128,23 @@ def getmtr(xa, maxlen):
         ls.append(q)
     xa = np.array(ls)
     return xa, x_mask
+
+# def pkl_to_csv(filename):
+#     data = pickle.load(open(data_folder + filename, "rb"))
+#     df = pd.DataFrame(data, columns=['sent1', 'sent2', 'sim_score'])
+#     df.to_csv(data_folder + filename + ".csv")
+def embed_sentence(sent_arr):
+    """ embed sent_arr (which is a numpy array with the words array(['A', 'truly', 'wise', 'man'], dtype='|S5') """
+    dmtr = numpy.zeros((sent_arr.shape[0], 300), dtype=np.float32)
+    word_idx = 0
+    while word_idx < len(sent_arr):
+        if sent_arr[word_idx] == ',':
+            word_idx += 1
+            continue
+        if sent_arr[word_idx] in dtr:
+            dmtr[word_idx] = model[dtr[sent_arr[word_idx]]]
+            word_idx += 1
+        else:
+            dmtr[word_idx] = model[sent_arr[word_idx]]
+            word_idx += 1
+    return dmtr

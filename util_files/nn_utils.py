@@ -1,10 +1,8 @@
-import numpy
-import numpy as np
 import theano
 from theano import tensor as tensor
 
 from util_files.general_utils import _p, numpy_floatX
-from util_files.Constants import options, use_noise, dtr, model
+from util_files.Constants import options, use_noise
 
 
 def dropout_layer(state_before, use_noise, rrng, rate):
@@ -153,20 +151,3 @@ def rmsprop(lr, tparams, grads, emb11, mask11, emb21, mask21, y, cost):
                                name='rmsprop_f_update')
 
     return f_grad_shared, f_update
-
-
-def embed_sentence(sent_arr):
-    """ embed sent_arr (which is a numpy array with the words array(['A', 'truly', 'wise', 'man'], dtype='|S5') """
-    dmtr = numpy.zeros((sent_arr.shape[0], 300), dtype=np.float32)
-    word_idx = 0
-    while word_idx < len(sent_arr):
-        if sent_arr[word_idx] == ',':
-            word_idx += 1
-            continue
-        if sent_arr[word_idx] in dtr:
-            dmtr[word_idx] = model[dtr[sent_arr[word_idx]]]
-            word_idx += 1
-        else:
-            dmtr[word_idx] = model[sent_arr[word_idx]]
-            word_idx += 1
-    return dmtr
