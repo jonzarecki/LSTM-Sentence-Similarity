@@ -86,16 +86,17 @@ class lstm:
 
     @staticmethod
     def _prepare_embeddings(x1, x2):
+        assert len(x1) == len(x2), "new function not equal to old one"
+        return lstm._prepare_embedding(x1), lstm._prepare_embedding(x2)
+
+    @staticmethod
+    def _prepare_embedding(sent_list):
         ls = []
-        ls2 = []
-        for j in range(0, len(x1)):
-            ls.append(embed_sentence(x1[j]))
-            ls2.append(embed_sentence(x2[j]))
+        for j in range(0, len(sent_list)):
+            ls.append(embed_sentence(sent_list[j]))
         trconv = np.dstack(ls)
-        trconv2 = np.dstack(ls2)
-        emb2 = np.swapaxes(trconv2, 1, 2)
-        emb1 = np.swapaxes(trconv, 1, 2)
-        return emb1, emb2
+        emb = np.swapaxes(trconv, 1, 2)
+        return emb
 
     def train_lstm(self, train, max_epochs, batch_size=32, disp_freq=40, lrate=0.0001):
         print "train_lstm - Start Training"
@@ -149,6 +150,16 @@ class lstm:
         yx = np.array(yx)
         # print "average error= "+str(np.mean(acc))
         return np.mean(np.square(px - yx)), meas.pearsonr(px, yx)[0], meas.spearmanr(yx, px)[0]
+
+    def get_sentence_embedding(self, sent):
+        q = [[sent, sent, 1]]
+        x1, mas1, x2, mas2, y2 = prepare_data(q)
+        use_noise.set_value(0.)
+        emb1 = self._prepare_embedding(x1)
+        return emb1, mas1
+
+    def predict_similarity_using_embeddings(self, emb1, mas1, emb2, mas2):
+        return self.f2sim(emb1, mas1, emb2, mas2)
 
     def predict_similarity(self, sa, sb):
         q = [[sa, sb, 0]]
