@@ -1,7 +1,7 @@
 import pickle
 import os
 import theano
-from gensim.models import KeyedVectors
+from gensim.models import Word2Vec
 from nltk.corpus import stopwords
 
 from util_files.general_utils import numpy_floatX
@@ -18,6 +18,9 @@ cachedStopWords = stopwords.words("english")
 model = None
 word_prob = None
 total_counts = None
+d2 = pickle.load(open(data_folder + "synsem.p", 'rb'))
+dtr = pickle.load(open(data_folder + "dwords.p", 'rb'))
+
 
 def initialize_word_prob():
     global word_prob
@@ -37,9 +40,6 @@ def initialize_w2v():
     global model
     if model is None:
         print "Loading word2vec"
-        model = KeyedVectors.load_word2vec_format(embeddings_folder + "GoogleNews-vectors-negative300.bin.gz", binary=True)
+        model = Word2Vec.load(embeddings_folder + "GoogleNews-vectors-negative300_trimmed.bin", mmap='r')
         print "Finished loading word2vec"
 initialize_w2v()
-
-d2 = pickle.load(open(data_folder + "synsem.p", 'rb'))
-dtr = pickle.load(open(data_folder + "dwords.p", 'rb'))
