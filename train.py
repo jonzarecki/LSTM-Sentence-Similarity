@@ -15,7 +15,7 @@ sls = lstm(models_folder + "new_model.p", load=False, training=True)
 train = pickle.load(open(data_folder + "stsallrmf.p", "rb"))  # [:-8]
 if training:
     print "Pre-training"
-    # sls.train_lstm(train, 66)
+    sls.train_lstm(train, 66)
     print "Pre-training done"
     train = pickle.load(open(data_folder + "semtrain.p", 'rb'))
     if Syn_aug:
@@ -32,7 +32,7 @@ print sls.check_error(test)
 
 if save_model:
     sys.setrecursionlimit(5000)  # avoid limit-exceeded when pickling
-    pickle.dump(sls, open(models_folder + "newp.p", "wb"))
+    sls.to_pickle()
 
 # Example
 sa = "A truly wise man"

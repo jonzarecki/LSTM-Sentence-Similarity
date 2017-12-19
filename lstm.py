@@ -41,10 +41,8 @@ def creatrnnx():
 
 class lstm:
     def __init__(self, model_path, load=False, training=False):
-        if load:
-            newp = pickle.load(open(model_path, 'rb'))  # nam is only used here
-        else:
-            newp = creatrnnx()
+        self.model_path = model_path
+        newp = pickle.load(open(model_path, 'rb')) if load else creatrnnx()
         tnewp = init_tparams(newp)
         for i in newp.keys():
             if i[0] == '1':
@@ -139,16 +137,11 @@ class lstm:
             x1, mas1, x2, mas2, y2 = prepare_data(q)
             emb1, emb2 = self._prepare_embeddings(x1, x2)
             pred = (self.f2sim(emb1, mas1, emb2, mas2)) * 4.0 + 1.0
-            # dm1=np.ones(mas1.shape,dtype=np.float32)
-            # dm2=np.ones(mas2.shape,dtype=np.float32)
-            # corr=f_cost(emb1,mas1,emb2,mas2,y2)
             for z in range(0, len(q)):
                 yx.append(y2[z])
                 px.append(pred[z])
-        # count.append(corr)
         px = np.array(px)
         yx = np.array(yx)
-        # print "average error= "+str(np.mean(acc))
         return np.mean(np.square(px - yx)), meas.pearsonr(px, yx)[0], meas.spearmanr(yx, px)[0]
 
     def get_sentence_embedding(self, sent):
