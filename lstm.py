@@ -12,6 +12,7 @@ import theano.tensor as tensor
 import pickle
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
+from util_files import printing_util
 from util_files.Constants import use_noise
 from util_files.nn_utils import getpl2, adadelta
 from util_files.general_utils import getlayerx, init_tparams
@@ -96,12 +97,15 @@ class lstm:
         emb = np.swapaxes(trconv, 1, 2)
         return emb
 
-    def train_lstm(self, train, max_epochs, batch_size=32, disp_freq=40, lrate=0.0001):
+    def train_lstm(self, train, max_epochs, batch_size=32, disp_freq=40, lrate=0.0001, verbose=False):
         print "train_lstm - Start Training"
         batch_count = 0
         for eidx in xrange(0, max_epochs):
             sta = time.time()
-            print 'Epoch', eidx
+            if verbose:
+                print 'Epoch', eidx
+            else:
+                printing_util.print_progress(eidx, max_epochs)
             rnd_order = sample(xrange(len(train)), len(train))  # random order for training each batch
             for batch_start_idx in range(0, len(train), batch_size):
                 batch_count += 1
@@ -115,12 +119,12 @@ class lstm:
 
                 cost = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)  # mean-squared error as defined at __init__
                 s = self.f_update(lrate)
-                assert s == [], "the retruns value does do something"
+                assert s == [], "the retrun values does do something"
 
-                if np.mod(batch_count, disp_freq) == 0:
+                if np.mod(batch_count, disp_freq) == 0 and verbose:
                     print 'Epoch ', eidx, 'Update ', batch_count, 'Cost ', cost
             sto = time.time()
-            print "epoch took:", sto - sta
+            if verbose: print "epoch took:", sto - sta
 
     def check_error(self, test_data):
         num = len(test_data)
