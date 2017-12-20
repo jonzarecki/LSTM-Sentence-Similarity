@@ -1,5 +1,5 @@
 # coding: utf-8
-from random import *
+import random
 import sys
 import theano.tensor as T
 from theano import config
@@ -44,7 +44,6 @@ class lstm:
     def __init__(self, model_path, load=False, training=False):
         self.model_path = model_path
         newp = pickle.load(open(model_path, 'rb')) if load else creatrnnx()
-        tnewp = init_tparams(newp)
         for i in newp.keys():
             if i[0] == '1':
                 newp['2' + i[1:]] = newp[i]
@@ -54,6 +53,7 @@ class lstm:
         emb11 = theano.tensor.ftensor3('emb11')
         emb21 = theano.tensor.ftensor3('emb21')
         trng = RandomStreams(1234)
+        tnewp = init_tparams(newp)
 
         rate = 0.5
         rrng = trng.binomial(emb11.shape, p=1 - rate, n=1, dtype=emb11.dtype)
@@ -106,7 +106,7 @@ class lstm:
                 print 'Epoch', eidx
             else:
                 printing_util.print_progress(eidx, max_epochs)
-            rnd_order = sample(xrange(len(train)), len(train))  # random order for training each batch
+            rnd_order = random.sample(xrange(len(train)), len(train))  # random order for training each batch
             for batch_start_idx in range(0, len(train), batch_size):
                 batch_count += 1
 
