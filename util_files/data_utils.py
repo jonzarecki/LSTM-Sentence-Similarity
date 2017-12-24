@@ -87,12 +87,12 @@ def expand_positive_examples(data, ignore_flag):
             if cnt1 > 0 and cnt2 > 0:
                 new_ex = [sa, sb, ex[2]]
                 new_examples.append(new_ex)
-    new_examples = filter(lambda new_ex: check_not_in_dataset(new_ex[0], new_ex[1], data), new_examples)
+    new_examples = filter(lambda new_ex: check_not_in_dataset(new_ex[0], new_ex[1], data), new_examples)[:5000]
     print "expand_positive_samples added " + str(len(new_examples)) + " new examples"
     return data + new_examples
 
 
-def prepare_data(data):
+def prepare_sent_pairs_data(data):
     xa1 = []
     xb1 = []
     y2 = []
@@ -106,13 +106,28 @@ def prepare_data(data):
     for i in xb1:
         lengths.append(len(i.split()))
     maxlen = numpy.max(lengths)
-    emb1, mas1 = getmtr(xa1, maxlen)
-    emb2, mas2 = getmtr(xb1, maxlen)
+    x1, mas1 = getmtr(xa1, maxlen)
+    x2, mas2 = getmtr(xb1, maxlen)
 
     y2 = np.array(y2, dtype=np.float32)
 
-    assert len(data) == len(emb1), "_prepare_embeddings assertion broken"
-    return emb1, mas1, emb2, mas2, y2
+    assert len(data) == len(x1), "_prepare_embeddings assertion broken"
+    return x1, mas1, x2, mas2, y2
+
+
+def prepare_single_sent_data(data):
+    xa1 = []
+    y2 = []
+    for i in range(0,len(data)):
+        xa1.append(data[i][0])
+        y2.append(data[i][1])
+    lengths=[]
+    for i in xa1:
+        lengths.append(len(i.split()))
+    maxlen = numpy.max(lengths)
+    x1, mas1 = getmtr(xa1, maxlen)
+
+    return x1, mas1, y2
 
 
 def getmtr(xa, maxlen):
@@ -152,6 +167,20 @@ def embed_sentence(sent_arr):
     return dmtr
 
 
+def prepare_sent_pair_word_embeddings(x1, x2):
+    assert len(x1) == len(x2), "new function not equal to old one"
+    return prepare_sent_word_embedding(x1), prepare_sent_word_embedding(x2)
+
+
+def prepare_sent_word_embedding(sent_list):
+    ls = []
+    for sent_arr in sent_list:
+        ls.append(embed_sentence(sent_arr))
+    trconv = np.dstack(ls)
+    sents_word_emb = np.swapaxes(trconv, 1, 2)
+    return sents_word_emb
+
+
 def sentence_unigram_probability(sent):
     """ pretty weak language model but should be enough"""
     prob = 1
@@ -161,3 +190,9 @@ def sentence_unigram_probability(sent):
         else:
             prob *= 1.0 / total_counts
     return prob
+
+
+def get_discrete_accuracy(classif, x_test, y_test):
+    pred = classif.predict(x_test)
+    score = np.sum(y_test == pred) / float(len(y_test)) * 100.0
+    return score

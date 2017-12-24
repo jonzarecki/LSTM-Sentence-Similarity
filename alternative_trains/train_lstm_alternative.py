@@ -10,7 +10,7 @@ import numpy as np
 
 from alternative_trains.SiameseLSTM import *
 from util_files.general_utils import init_tparams, numpy_floatX
-from util_files.data_utils import expand_positive_examples, prepare_data, embed_sentence
+from util_files.data_utils import expand_positive_examples, prepare_sent_pairs_data, embed_sentence
 from util_files.nn_utils import getpl2, adadelta
 from util_files.Constants import data_folder, models_folder
 
@@ -28,7 +28,7 @@ def chkterr2(mydata):
             x=num
         for j in range(i,x):
             q.append(mydata[j])
-        x1,mas1,x2,mas2,y2=prepare_data(q)
+        x1,mas1,x2,mas2,y2=prepare_sent_pairs_data(q)
         ls=[]
         ls2=[]
         for j in range(0,len(q)):
@@ -78,7 +78,7 @@ def train_lstm(train,max_epochs):
                 q.append(train[rnd[z]])
             #q=train[i:i+32]
             #shuffle(q)
-            x1,mas1,x2,mas2,y2=prepare_data(q)
+            x1,mas1,x2,mas2,y2=prepare_sent_pairs_data(q)
             
             ls=[]
             ls2=[]
@@ -172,7 +172,7 @@ print chkterr2(test)
 #Example
 q=[["A truly wise man","He is smart",0]]
 
-x1,mas1,x2,mas2,y2=prepare_data(q)
+x1,mas1,x2,mas2,y2=prepare_sent_pairs_data(q)
 ls=[]
 ls2=[]
 for j in range(0,len(q)):

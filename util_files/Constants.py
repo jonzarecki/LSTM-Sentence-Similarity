@@ -20,6 +20,7 @@ word_prob = None
 total_counts = None
 d2 = pickle.load(open(data_folder + "synsem.p", 'rb'))
 dtr = pickle.load(open(data_folder + "dwords.p", 'rb'))
+tmp_expr_foldpath = None
 
 
 def initialize_word_prob():

@@ -16,7 +16,8 @@ from util_files import printing_util
 from util_files.Constants import use_noise
 from util_files.nn_utils import getpl2, adadelta
 from util_files.general_utils import getlayerx, init_tparams
-from util_files.data_utils import prepare_data, embed_sentence
+from util_files.data_utils import prepare_sent_pairs_data, prepare_sent_pair_word_embeddings, \
+    prepare_sent_word_embedding, prepare_single_sent_data
 
 
 def creatrnnx():
@@ -83,29 +84,16 @@ class lstm:
 
             self.f_grad_shared, self.f_update = adadelta(lr, tnewp, grads, emb11, mask11, emb21, mask21, y, cost)
 
-    @staticmethod
-    def _prepare_embeddings(x1, x2):
-        assert len(x1) == len(x2), "new function not equal to old one"
-        return lstm._prepare_embedding(x1), lstm._prepare_embedding(x2)
-
-    @staticmethod
-    def _prepare_embedding(sent_list):
-        ls = []
-        for j in range(0, len(sent_list)):
-            ls.append(embed_sentence(sent_list[j]))
-        trconv = np.dstack(ls)
-        emb = np.swapaxes(trconv, 1, 2)
-        return emb
-
-    def train_lstm(self, train, max_epochs, batch_size=32, disp_freq=40, lrate=0.0001, verbose=False):
+    def train_lstm(self, train, max_epochs, batch_size=64, disp_freq=20, lrate=0.0001, verbose=False, eval_data=None):
         print "train_lstm - Start Training"
+        st_time = time.time()
         batch_count = 0
         for eidx in xrange(0, max_epochs):
             sta = time.time()
             if verbose:
                 print 'Epoch', eidx
             else:
-                printing_util.print_progress(eidx, max_epochs)
+                printing_util.print_progress(eidx+1, max_epochs)
             rnd_order = random.sample(xrange(len(train)), len(train))  # random order for training each batch
             for batch_start_idx in range(0, len(train), batch_size):
                 batch_count += 1
@@ -113,18 +101,22 @@ class lstm:
                 batch_end = batch_start_idx + batch_size if (batch_start_idx + batch_size) <= len(train) else len(train)
                 batch_train = [train[rnd_order[idx]] for idx in range(batch_start_idx, batch_end)]  # extract examples
 
-                x1, mas1, x2, mas2, y2 = prepare_data(batch_train)
+                x1, mas1, x2, mas2, y2 = prepare_sent_pairs_data(batch_train)
                 use_noise.set_value(1.)
-                emb1, emb2 = self._prepare_embeddings(x1, x2)
+                emb1, emb2 = prepare_sent_pair_word_embeddings(x1, x2)
 
                 cost = self.f_grad_shared(emb2, mas2, emb1, mas1, y2)  # mean-squared error as defined at __init__
                 s = self.f_update(lrate)
                 assert s == [], "the retrun values does do something"
 
-                if np.mod(batch_count, disp_freq) == 0 and verbose:
+            if np.mod(eidx, disp_freq) == 0:
+                if verbose:
                     print 'Epoch ', eidx, 'Update ', batch_count, 'Cost ', cost
+                if eval_data is not None:
+                    print self.check_error(eval_data)
             sto = time.time()
             if verbose: print "epoch took:", sto - sta
+        print "training took: ",  (time.time() - st_time)/60, "mins"
 
     def check_error(self, test_data):
         num = len(test_data)
@@ -138,8 +130,8 @@ class lstm:
                 x = num
             for j in range(i, x):
                 q.append(test_data[j])
-            x1, mas1, x2, mas2, y2 = prepare_data(q)
-            emb1, emb2 = self._prepare_embeddings(x1, x2)
+            x1, mas1, x2, mas2, y2 = prepare_sent_pairs_data(q)
+            emb1, emb2 = prepare_sent_pair_word_embeddings(x1, x2)
             pred = (self.f2sim(emb1, mas1, emb2, mas2)) * 4.0 + 1.0
             for z in range(0, len(q)):
                 yx.append(y2[z])
@@ -149,21 +141,29 @@ class lstm:
         return np.mean(np.square(px - yx)), meas.pearsonr(px, yx)[0], meas.spearmanr(yx, px)[0]
 
     def get_sentence_embedding(self, sent):
-        q = [[sent, sent, 1]]
-        x1, mas1, x2, mas2, y2 = prepare_data(q)
+
+        q = [[sent, 1.0]]
+        x1, mas1, y2 = prepare_single_sent_data(q)
         use_noise.set_value(0.)
-        emb1 = self._prepare_embedding(x1)
-        return emb1, mas1
+        emb1 = prepare_sent_word_embedding(x1)
+        return self.f_proj11(emb1, mas1)[0]
+
+    def get_sentence_embedding_bulk(self, sents):
+        q = map(lambda sent: [sent, 1.0], sents)
+        x1, mas1, y2 = prepare_single_sent_data(q)
+        emb1 = prepare_sent_word_embedding(x1)
+
+        return self.f_proj11(emb1, mas1)  # calculated in parallel in GPU
 
     def predict_similarity_using_embeddings(self, emb1, mas1, emb2, mas2):
         return self.f2sim(emb1, mas1, emb2, mas2)
 
     def predict_similarity(self, sa, sb):
         q = [[sa, sb, 0]]
-        x1, mas1, x2, mas2, y2 = prepare_data(q)
+        x1, mas1, x2, mas2, y2 = prepare_sent_pairs_data(q)
         assert len(x1) == len(q), "ASdasd"
         use_noise.set_value(0.)
-        emb1, emb2 = self._prepare_embeddings(x1, x2)
+        emb1, emb2 = prepare_sent_pair_word_embeddings(x1, x2)
 
         return self.f2sim(emb1, mas1, emb2, mas2)
 
@@ -176,3 +176,7 @@ class lstm:
     @staticmethod
     def load_from_pickle(model_path):
         return pickle.load(open(model_path, "rb"))
+
+
+
+
