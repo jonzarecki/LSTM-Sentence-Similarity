@@ -10,7 +10,8 @@ import numpy as np
 
 from alternative_trains.SiameseLSTM import *
 from util_files.general_utils import init_tparams, numpy_floatX
-from util_files.data_utils import expand_positive_examples, prepare_sent_pairs_data, embed_sentence
+from util_files.data_utils import prepare_sent_pairs_data, embed_sentence
+from util_files.positive_expansion import expand_positive_examples
 from util_files.nn_utils import getpl2, adadelta
 from util_files.Constants import data_folder, models_folder
 

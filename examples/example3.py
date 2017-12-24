@@ -2,8 +2,7 @@ import sys
 
 from lstm import *
 from util_files.Constants import data_folder, models_folder
-from util_files.data_utils import expand_positive_examples
-
+from util_files.positive_expansion import expand_positive_examples
 
 training = True  # Set to false to load weights
 Syn_aug = False  # it False faster but does slightly worse on Test dataset

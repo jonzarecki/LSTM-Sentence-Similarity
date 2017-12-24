@@ -9,7 +9,7 @@ from lstm import lstm
 from negative_sampling import extend_negative_samples
 import negative_sampling
 from util_files.Constants import data_folder, models_folder
-from util_files.data_utils import expand_positive_examples
+from util_files.positive_expansion import expand_positive_examples
 from util_files.run_experiment_util import experiment_on_data_and_save_results
 import util_files.Constants as cn
 

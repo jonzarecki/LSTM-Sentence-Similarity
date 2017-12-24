@@ -6,14 +6,14 @@ from sklearn.svm import SVC
 
 from lstm import lstm
 from util_files.Constants import data_folder, use_noise, models_folder
-from util_files.data_utils import prepare_sent_pairs_data, get_discrete_accuracy
+from util_files.data_utils import get_discrete_accuracy
 
 
 
 def prepare_entailment_data(data):
     return map(lambda entry: [entry[0], entry[1], entry[3]], data)
 
-def prepare_svm_train_data(mydata, lst):
+def prepare_svm_data(mydata, lst):
     # type: (list, lstm) -> tuple
     num = len(mydata)
     features = []
@@ -37,18 +37,15 @@ model_name = "negative_5000_model.p"
 lst = lstm.load_from_pickle(models_folder + model_name)
 train = pickle.load(open(data_folder + "semtrain.p", 'rb'))
 train = prepare_entailment_data(train)
+test = pickle.load(open(data_folder + "semtest.p", 'rb'))
+test = prepare_entailment_data(test)
 
 shuffle(train)
-xdat, ydat = prepare_svm_train_data(train, lst)
-train_lim = int(0.7 * len(xdat))
-
-x_train = xdat[0:train_lim]
-y_train = ydat[0:train_lim]
-x_cross_val = xdat[train_lim:]
-y_cross_val = ydat[train_lim:]
+x_train, y_train = prepare_svm_data(train, lst)
+x_test, y_test = prepare_svm_data(train, lst)
 
 clf = SVC(C=100, gamma=3.1, kernel='rbf')
 clf.fit(x_train, y_train)
 
 print "Training accuracy:", get_discrete_accuracy(clf, x_train, y_train)
-print "Cross validation accuracy:", get_discrete_accuracy(clf, x_cross_val, y_cross_val)
+print "Cross validation accuracy:", get_discrete_accuracy(clf, x_test, y_test)
