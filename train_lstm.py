@@ -1,17 +1,15 @@
 import pickle
 import random
-import sys
-import numpy
-import time
-import os
 
+import numpy
+
+import negative_sampling
+import util_files.Constants as cn
 from lstm import lstm
 from negative_sampling import extend_negative_samples
-import negative_sampling
-from util_files.Constants import data_folder, models_folder
+from util_files.Constants import data_folder
 from util_files.positive_expansion import expand_positive_examples
 from util_files.run_experiment_util import experiment_on_data_and_save_results
-import util_files.Constants as cn
 
 random.seed(1554)
 numpy.random.seed(42)
@@ -30,7 +28,7 @@ def experiment(theme):
     print "epoch num pre-training: " + str(epoch_num_pre_training)
     print "epoch num training: " + str(epoch_num_training)
 
-    sls = lstm(cn.tmp_expr_foldpath + "/" + model_name + ".p", load=False, training=True)
+    sls = lstm(training=True)
     test = pickle.load(open(data_folder + "semtest.p", 'rb'))
     train = pickle.load(open(data_folder + "stsallrmf.p", "rb"))
 
@@ -51,7 +49,7 @@ def experiment(theme):
     print sls.check_error(test)
 
     if save_model:
-        sls.to_pickle()
+        sls.save_to_pickle(cn.tmp_expr_foldpath + "/" + model_name + ".p")
 
     # Example
     sa = "A truly wise man"

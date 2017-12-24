@@ -1,23 +1,22 @@
-# coding: utf-8
+import pickle
 import random
-import sys
-import theano.tensor as T
-from theano import config
-import theano
+import time
+from collections import OrderedDict
+
 import numpy as np
 import scipy.stats as meas
-from collections import OrderedDict
-import time
+import theano
+import theano.tensor as T
 import theano.tensor as tensor
-import pickle
+from theano import config
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
 from util_files import printing_util
 from util_files.Constants import use_noise
-from util_files.nn_utils import getpl2, adadelta
-from util_files.general_utils import getlayerx, init_tparams
 from util_files.data_utils import prepare_sent_pairs_data, prepare_sent_pair_word_embeddings, \
     prepare_sent_word_embedding, prepare_single_sent_data
+from util_files.general_utils import getlayerx, init_tparams
+from util_files.nn_utils import getpl2, adadelta
 
 
 def creatrnnx():
@@ -42,9 +41,11 @@ def creatrnnx():
 
 
 class lstm:
-    def __init__(self, model_path, load=False, training=False):
-        self.model_path = model_path
+    def __init__(self, training=None, load=None, model_path=None):
+        assert training or (load and model_path is not None), \
+            "choose either training=True or load=True and specify the model's path"
         newp = pickle.load(open(model_path, 'rb')) if load else creatrnnx()
+
         for i in newp.keys():
             if i[0] == '1':
                 newp['2' + i[1:]] = newp[i]
@@ -54,13 +55,13 @@ class lstm:
         emb11 = theano.tensor.ftensor3('emb11')
         emb21 = theano.tensor.ftensor3('emb21')
         trng = RandomStreams(1234)
-        tnewp = init_tparams(newp)
+        self.tnewp = init_tparams(newp)
 
         rate = 0.5
         rrng = trng.binomial(emb11.shape, p=1 - rate, n=1, dtype=emb11.dtype)
 
-        proj11 = getpl2(emb11, '1lstm1', mask11, False, rrng, 50, tnewp)[-1]
-        proj21 = getpl2(emb21, '2lstm1', mask21, False, rrng, 50, tnewp)[-1]
+        proj11 = getpl2(emb11, '1lstm1', mask11, False, rrng, 50, newp)[-1]
+        proj21 = getpl2(emb21, '2lstm1', mask21, False, rrng, 50, self.tnewp)[-1]
         dif = (proj21 - proj11).norm(L=1, axis=1)
         s2 = T.exp(-dif)
         sim = T.clip(s2, 1e-7, 1.0 - 1e-7)
@@ -73,16 +74,16 @@ class lstm:
         self.f_cost = theano.function([emb11, mask11, emb21, mask21, y], cost, allow_input_downcast=True)  # not used
 
         if training:
-            gradi = tensor.grad(cost, wrt=tnewp.values())  # /bts
+            gradi = tensor.grad(cost, wrt=self.tnewp.values())  # /bts
             grads = []
             l = len(gradi)
             for i in range(0, l / 2):
                 gravg = (gradi[i] + gradi[i + l / 2]) / (4.0)
                 grads.append(gravg)
-            for i in range(0, len(tnewp.keys()) / 2):
+            for i in range(0, len(self.tnewp.keys()) / 2):
                 grads.append(grads[i])
 
-            self.f_grad_shared, self.f_update = adadelta(lr, tnewp, grads, emb11, mask11, emb21, mask21, y, cost)
+            self.f_grad_shared, self.f_update = adadelta(lr, self.tnewp, grads, emb11, mask11, emb21, mask21, y, cost)
 
     def train_lstm(self, train, max_epochs, batch_size=64, disp_freq=20, lrate=0.0001, verbose=False, eval_data=None):
         print "train_lstm - Start Training"
@@ -167,15 +168,18 @@ class lstm:
 
         return self.f2sim(emb1, mas1, emb2, mas2)
 
-    def to_pickle(self):
-        old_lim = sys.getrecursionlimit()
-        sys.setrecursionlimit(5000)  # avoid limit-exceeded when pickling
-        pickle.dump(self, open(self.model_path, "wb"))
-        sys.setrecursionlimit(old_lim)
+    def save_to_pickle(self, model_path):
+        params = OrderedDict(map(lambda (key, gpuvar): (key, gpuvar.get_value()), self.tnewp.iteritems()))
+        pickle.dump(params, open(model_path, "wb"))
+
+    @staticmethod
+    def load_from_pickle_old(model_path):
+        return pickle.load(open(model_path, "rb"))
 
     @staticmethod
     def load_from_pickle(model_path):
-        return pickle.load(open(model_path, "rb"))
+        return lstm(load=True, model_path=model_path)
+
 
 
 

@@ -10,7 +10,7 @@ from util_files.data_utils import prepare_single_sent_data, get_discrete_accurac
 
 model_name = "negative_5000_model.p"
 # lst=lstm(models_folder + "bestsem.p",load=True,training=False)
-lst = lstm.load_from_pickle(models_folder + model_name)
+lst = lstm.load_from_pickle_old(models_folder + model_name)
 train = pickle.load(open(data_folder + "kaggle.p", 'rb'))
 
 

@@ -1,5 +1,3 @@
-from random import shuffle
-
 import pickle
 import numpy as np
 from sklearn.svm import SVC
@@ -32,20 +30,19 @@ def prepare_svm_data(mydata, lst):
     ys = np.array(ys)
     return features, ys
 
-model_name = "negative_5000_model.p"
+model_name = "slight_improvement/negative5000_score2.0_model.p"
 # lst=lstm(models_folder + "bestsem.p",load=True,training=False)
-lst = lstm.load_from_pickle(models_folder + model_name)
+lst = lstm.load_from_pickle_old(models_folder + model_name)
 train = pickle.load(open(data_folder + "semtrain.p", 'rb'))
 train = prepare_entailment_data(train)
 test = pickle.load(open(data_folder + "semtest.p", 'rb'))
 test = prepare_entailment_data(test)
 
-shuffle(train)
 x_train, y_train = prepare_svm_data(train, lst)
-x_test, y_test = prepare_svm_data(train, lst)
+x_test, y_test = prepare_svm_data(test, lst)
 
 clf = SVC(C=100, gamma=3.1, kernel='rbf')
 clf.fit(x_train, y_train)
 
 print "Training accuracy:", get_discrete_accuracy(clf, x_train, y_train)
-print "Cross validation accuracy:", get_discrete_accuracy(clf, x_test, y_test)
+print "Test accuracy:", get_discrete_accuracy(clf, x_test, y_test)
