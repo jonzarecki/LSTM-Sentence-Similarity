@@ -60,7 +60,7 @@ class lstm:
         rate = 0.5
         rrng = trng.binomial(emb11.shape, p=1 - rate, n=1, dtype=emb11.dtype)
 
-        proj11 = getpl2(emb11, '1lstm1', mask11, False, rrng, 50, newp)[-1]
+        proj11 = getpl2(emb11, '1lstm1', mask11, False, rrng, 50, self.tnewp)[-1]
         proj21 = getpl2(emb21, '2lstm1', mask21, False, rrng, 50, self.tnewp)[-1]
         dif = (proj21 - proj11).norm(L=1, axis=1)
         s2 = T.exp(-dif)
