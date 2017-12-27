@@ -8,9 +8,9 @@ from lstm import lstm
 from util_files.Constants import data_folder, use_noise, models_folder
 from util_files.data_utils import prepare_single_sent_data, get_discrete_accuracy
 
-model_name = "negative_5000_model.p"
-# lst=lstm(models_folder + "bestsem.p",load=True,training=False)
-lst = lstm.load_from_pickle_old(models_folder + model_name)
+model_name = "bestsem.p"
+print model_name
+lst=lstm(model_path=models_folder + model_name, load=True)
 train = pickle.load(open(data_folder + "kaggle.p", 'rb'))
 
 

@@ -30,9 +30,10 @@ def prepare_svm_data(mydata, lst):
     ys = np.array(ys)
     return features, ys
 
-model_name = "slight_improvement/negative5000_score2.0_model.p"
-# lst=lstm(models_folder + "bestsem.p",load=True,training=False)
-lst = lstm.load_from_pickle_old(models_folder + model_name)
+model_name = "bestsem.p"
+print model_name
+lst=lstm(model_path=models_folder + model_name, load=True)
+
 train = pickle.load(open(data_folder + "semtrain.p", 'rb'))
 train = prepare_entailment_data(train)
 test = pickle.load(open(data_folder + "semtest.p", 'rb'))
