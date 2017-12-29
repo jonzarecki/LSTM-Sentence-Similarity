@@ -1,4 +1,4 @@
-# Siamese-LSTM
+# LSTM-Sentence-Similarity
 
 Theano Implementation of "Siamese Recurrent Architectures for Learning Sentence Similarity".
 
