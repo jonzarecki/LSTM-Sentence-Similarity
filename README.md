@@ -1,12 +1,9 @@
 # Siamese-LSTM
-Download the word2vec model from
-https://code.google.com/archive/p/word2vec/ 
-and download the file: GoogleNews-vectors-negative300.bin.gz
+
+Theano Implementation of "Siamese Recurrent Architectures for Learning Sentence Similarity".
+
+Download the word2vec model from https://code.google.com/archive/p/word2vec/  and download the file: GoogleNews-vectors-negative300.bin.gz
 Set training=False if you want to load trained weights
-Files:
-1. semtrain.p- training data (SemEval 2014)
-2. semtest.p- testing date (SemEval 2014)
-3. stsallrmf.p- all STS data.
 
 Scripts: (in examples folder)
 1. example1.py : Load trained model to predict sentence similarity on a scale of 1.0-5.0
