@@ -10,5 +10,8 @@ Download the word2vec model from https://code.google.com/archive/p/word2vec/  an
 
 Use train_lstm.py in order to train a new lstm, use train_entailment.py to train an entailment classifier based on the already trained lstm mode. Other training methods exist in alternative_trains/
 
-
+## Technical Info
+Python version 2.7 
+Tensorflow version 1.8
+Gensim version 3.2
 
